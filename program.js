@@ -7,12 +7,26 @@ var planeId = instance.GenerateId()
 var earthId = instance.GenerateId()
 var marsId = instance.GenerateId()
 var marsTextureId = instance.GenerateId()
+var ParentMatrixId = instance.GenerateId()
+
+var ParentMatrix = new AVROS.Thing("ParentMatrix")
+
+ParentMatrix.set({
+	"id": ParentMatrixId,
+	"type": "empty",
+	"scale": {
+		"x": 1,
+		"y": 1,
+		"z": 1
+	}
+})
 
 var cube = new AVROS.Thing("Cube")
 
 cube.set({
 	"id": cubeId,
 	"type": "cube",
+	"parent": ParentMatrixId,
 	"scale": {
 		"x": 0.1,
 		"y": 0.1,
@@ -70,7 +84,13 @@ var earth = new AVROS.Thing("Earth")
 
 earth.set({
 	"id": earthId,
+	"parent": ParentMatrixId,
 	"type": "sphere",
+	"position": {
+	  "x": -0.15,
+	  "y": 0.15,
+	  "z": 0.0
+	},
 	"scale": {
 		"x": 0.1,
 		"y": 0.1,
@@ -82,10 +102,11 @@ var mars = new AVROS.Thing("Mars")
 
 mars.set({
 	"id": marsId,
+	"parent": ParentMatrixId,
 	"type": "sphere",
 	"position": {
-	  "x": 0.0,
-	  "y": 0.0,
+	  "x": 0.15,
+	  "y": 0.15,
 	  "z": 0.0
 	},
 	"scale": {
@@ -94,6 +115,45 @@ mars.set({
 		"z": 0.1
 	}
 })
+
+var moon = new AVROS.Thing("Moon")
+
+moon.set({
+	"parent": ParentMatrixId,
+	"type": "sphere",
+	"position": {
+	  "x": 0,
+	  "y": 0.23,
+	  "z": 0.0
+	},
+	"scale": {
+		"x": 0.1,
+		"y": 0.1,
+		"z": 0.1
+	}
+})
+
+// spaceport construction
+
+var MainFrameId = instance.GenerateId()
+var MainFrame = new AVROS.Thing("Main frame")
+
+MainFrame.set({
+	"id": MainFrameId,		
+	"type": "cube",
+	"parent": earthId,
+	"position": {
+	  "x": 0.0,
+	  "y": 1.0,
+	  "z": -0.1
+	},
+	"scale": {
+		"x": 0.01,
+		"y": 0.01,
+		"z": 0.01
+	}
+})
+
 
 const {
   createCanvas,
@@ -110,6 +170,16 @@ var height = 500
 var marsCanvas = createCanvas(width, height)
 var marsCtx = marsCanvas.getContext('2d')
 
+var width = 1000
+var height = 500
+var earthCanvas = createCanvas(width, height)
+var earthCtx = earthCanvas.getContext('2d')
+
+var width = 1000
+var height = 500
+var moonCanvas = createCanvas(width, height)
+var moonCtx = moonCanvas.getContext('2d')
+
 
 instance.app.get('/lobby', function(req, res) {
   res.send(fs.readFileSync('models/lobby'));
@@ -119,14 +189,25 @@ instance.app.get('/lobby', function(req, res) {
 
 instance.on("user enter", function(ws) {
   console.log("User " + ws.UserName + " entered")
-  instance.SpawnAsInterest(ws, cube)
+  instance.SpawnAsInterest(ws, ParentMatrix)
+  instance.DescribeObject(ws, cube)
   instance.DescribeObject(ws, plane)
   instance.DescribeObject(ws, MarsTextureView)
   console.log("Mars texture")
-  //instance.SpawnAsInterest(ws, earth)
-  instance.SpawnAsInterest(ws, mars)
+  instance.DescribeObject(ws, earth)
+  instance.DescribeObject(ws, mars)
+  instance.DescribeObject(ws, moon)
+  instance.DescribeObject(ws, MainFrame)
 
+  instance.AddTag(ws, ParentMatrix, "Scalable")
+  /*
+  instance.AddTag(ws, MainFrame, "Grabable")
+  instance.AddTag(ws, MainFrame, "GrabMyParent")
+  instance.AddTag(ws, MainFrame, "Scalable")
+  instance.AddTag(ws, MainFrame, "Raycast")
+  */
   instance.AddTag(ws, cube, "Grabable")
+  instance.AddTag(ws, cube, "GrabMyParent")
   instance.AddTag(ws, cube, "Scalable")
   instance.AddTag(ws, plane, "Raycast")
   
@@ -195,7 +276,6 @@ instance.on("user enter", function(ws) {
 'And there will be plots of land on mars, and constructions\n'+
 ', 50, 100)'
   */
-
   loadImage('icons8-space-shuttle-48.png').then(function(img) {
     ctx.drawImage(img, 10, 10, 48, 48)
     instance.SetTexture(ws, plane, canvas)
@@ -208,6 +288,20 @@ instance.on("user enter", function(ws) {
 	instance.SetTexture(ws, MarsTextureView, marsCanvas)
   })
   
+  loadImage('img/2k_earth.jpg').then(function(img) {
+    marsCtx.drawImage(img, 0, 0, 1000, 500)
+	instance.SetTexture(ws, earth, marsCanvas)
+  })
+  
+  
+  loadImage('img/2k_moon.jpg').then(function(img) {
+    moonCtx.drawImage(img, 0, 0, 1000, 500)
+	instance.SetTexture(ws, moon, moonCanvas)
+  })
+  
+  
+  
+//2k_moon.jpg
   
 
 })
